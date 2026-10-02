@@ -1,0 +1,13 @@
+{
+  "name": "crypter",
+  "version": "2.0.0",
+  "description": "Client-side classical and modern cipher playground (Caesar, Rail Fence, Playfair, Affine, Hill, DES, 2DES, 3DES, AES).",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "crypto-js": "4.2.0"
+  }
+}
