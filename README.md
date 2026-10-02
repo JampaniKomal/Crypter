@@ -1,109 +1,148 @@
 # Crypter
 
-A versatile, client-side web application that allows users to encrypt and decrypt text using a variety of classical and modern cryptographic ciphers.
+[![CI](https://github.com/JampaniKomal/Crypter/actions/workflows/ci.yml/badge.svg)](https://github.com/JampaniKomal/Crypter/actions/workflows/ci.yml)
+
+A versatile, client-side web application for encrypting and decrypting text with a
+range of classical and modern ciphers. Everything runs in your browser — no text
+ever leaves the page.
 
 **Live Demo:** [jampanikomal.github.io/Crypter/](https://jampanikomal.github.io/Crypter/)
 
+![Crypter running the Caesar cipher in dark mode](docs/screenshot.png)
+
 ## Features
 
-- **Multiple Ciphers:** Implements a wide range of ciphers:
+- **Nine ciphers:**
     - **Classical:** Caesar, Rail Fence, Playfair, Affine, and Hill.
-    - **Modern (Symmetric):** DES, 2DES, 3DES, and AES.
-- **User-Friendly Interface:** Easily switch between ciphers, with controls and key inputs dynamically updating for the selected algorithm.
-- **Privacy-Focused:** All encryption and decryption operations are performed locally in your browser. No data is ever sent to a server.
-- **Light/Dark Theme:** Toggle between light and dark modes for user comfort.
-- **Informative Modals:** An "Info" modal provides a brief overview of each available cipher.
-- **Custom Alerts:** Clean, non-blocking alerts for user guidance and error messages.
-- **Responsive Design:** Fully functional on both desktop and mobile devices.
+    - **Modern (symmetric):** DES, 2DES, 3DES, and AES.
+- **Everything is local.** All encryption and decryption happens in the browser;
+  nothing is sent to a server.
+- **One unified tool.** Switch ciphers with a click; the key inputs and controls
+  update to match the selected algorithm.
+- **Light / dark theme**, remembered across visits.
+- **Info modal** with a short description of every cipher.
+- **Responsive**, with a collapsible cipher list on small screens.
+
+## How it works
+
+The classical ciphers are implemented from scratch in plain JavaScript. The modern
+block ciphers delegate to [CryptoJS](https://github.com/brix/crypto-js), which is
+the well-tested, standard implementation — `Crypter` does not roll its own AES/DES.
+
+All cipher logic lives in a single, dependency-light module ([`js/ciphers.js`](js/ciphers.js))
+that runs unchanged in the browser and under Node, which is what lets it be tested
+automatically (see below). The UI wiring is kept separate in [`js/app.js`](js/app.js).
+
+The modern ciphers use CryptoJS's passphrase mode: the output is an OpenSSL-style,
+salted Base64 string (it starts with `U2FsdGVk…`, the Base64 of `Salted__`). Feed
+that whole string back in as the input to decrypt, with the same key.
 
 ## Technologies Used
 
-- **HTML5:** For the core structure of the application.
-- **CSS3:** For modern styling, layout, and responsiveness.
-- **JavaScript (with jQuery):** Powers the user interface, cipher logic, and all interactivity.
-- **CryptoJS:** Used for the robust and standardized implementations of modern block ciphers (DES, 3DES, AES).
+- **HTML5 / CSS3** for structure, styling and responsiveness.
+- **JavaScript (with jQuery)** for the UI and the classical cipher logic.
+- **CryptoJS** (4.2.0, via CDN) for the modern block ciphers.
+- **Node's built-in test runner** (`node --test`) for the automated suite.
 
-## Installation and Setup
+## Project structure
 
-You can run this project locally with just a few simple steps.
+```
+index.html            # markup + CDN script tags
+style.css             # styling (light/dark themes)
+js/ciphers.js         # all cipher logic (browser + Node)
+js/app.js             # UI wiring
+tests/ciphers.test.js # automated tests (node --test)
+.github/workflows/    # CI
+docs/screenshot.png
+```
 
-1.  **Clone the Repository:**
-    ```sh
-    git clone https://github.com/JampaniKomal/Crypter.git
-    cd Crypter
-    ```
+## Running locally
 
-2.  **Run Locally:**
-    Since the project uses CDN links for jQuery and CryptoJS, you don't need to install any dependencies. Simply open the `index.html` file in your favorite web browser.
+The app itself needs no build or install — it pulls jQuery and CryptoJS from a CDN,
+so you can just open `index.html`. A local server avoids file-URL quirks:
 
-    For the best experience (to avoid any potential CORS issues with local files), it's recommended to use a local server.
-
-    **Using the VS Code Live Server Extension:**
-    - Install the "Live Server" extension from the VS Code Marketplace.
-    - Right-click on `index.html` in the file explorer and select "Open with Live Server."
-
-    **Using Python's built-in HTTP server:**
-    - Navigate to the project directory in your terminal and run:
-      ```sh
-      python -m http.server
-      ```
-    - Open your browser and go to `http://localhost:8000`.
+```sh
+git clone https://github.com/JampaniKomal/Crypter.git
+cd Crypter
+python -m http.server     # then open http://localhost:8000
+```
 
 ## Usage
 
-- **Select a Cipher:** Click any button in the "Select Cipher" panel to choose an algorithm.
-- **Enter Text:** Type or paste the text you want to encrypt or decrypt into the "Input Text" box.
-- **Provide Key(s):** Enter the required key(s) for the selected cipher in the control section.
-- **Encrypt/Decrypt:** Click the "Encrypt" or "Decrypt" button to perform the operation.
-- **View Output:** The result will appear in the "Output Text" box. For modern ciphers like AES/DES, the encrypted output is a Base64 string, which should be used as the input for decryption.
-- **Switch Themes:** Use the toggle switch in the top-right to change between light and dark modes.
-- **Get Info:** Click the "ⓘ Info" button to learn more about the ciphers.
+- **Select a cipher** from the "Select Cipher" panel.
+- **Enter text** in the Input box and **provide the key(s)** for that cipher.
+- Click **Encrypt** or **Decrypt**. The result appears in the Output box.
+- For the modern ciphers (DES/2DES/3DES/AES), the encrypted output is a Base64
+  string — use that whole string as the input when decrypting.
+- Toggle **Light/Dark** in the top-right, or click **ⓘ Info** for a cipher overview.
+
+## Testing
+
+The cipher logic has an automated test suite (19 tests) using Node's built-in
+runner — no test framework to install, just the one dev dependency (CryptoJS):
+
+```sh
+npm install
+npm test
+```
+
+The suite mixes three kinds of checks:
+
+- **Known-answer vectors** verified independently of this code — e.g. Caesar
+  `HELLO`→`KHOOR` (shift 3), the classic Rail Fence example
+  `WEAREDISCOVEREDFLEEATONCE`→`WECRLTEERDSOEEFEAOCAIVDEN`, and the Wikipedia
+  Affine vector `AFFINECIPHER`→`IHHWVCSWFRCP` (a=5, b=8).
+- **Round-trips** for all nine ciphers (encrypt → decrypt returns the input).
+- **Regression tests** for the specific bugs fixed below.
+
+CI runs the suite on Node 18, 20 and 22 on every push and pull request.
+
+### Bugs found and fixed
+
+Exercising every cipher — first by hand in a browser, then by writing the test
+suite — surfaced three real bugs, all fixed:
+
+- **2DES was completely broken.** It chained two `CryptoJS.DES.encrypt()` calls
+  without converting the intermediate `CipherParams` object to a string first, so
+  it threw `Invalid array length` the moment anyone used 2DES. Fixed by calling
+  `.toString()` between the two stages on both encrypt and decrypt.
+- **The Hill cipher rejected many valid keys.** The determinant was normalised with
+  `(det + 26) % 26`, which adds 26 only once — not enough for determinants more
+  negative than −26. For example the keyword `BZCD` gives a determinant of
+  `3 − 50 = −47 ≡ 5 (mod 26)`, which *is* coprime to 26 and perfectly invertible,
+  but the old code computed `−47 + 26 = −21`, kept it negative, and wrongly rejected
+  the key as "not invertible". Fixed by normalising every modular step through an
+  always-positive `mod(n, m) = ((n % m) + m) % m` helper. (This slipped past the
+  earlier manual check because only the default keys were tried.) The same fix makes
+  the Affine decrypt robust for shift values `b` outside `0–25`.
+- **The default Hill keyword was mathematically invalid.** `GYBN` has determinant 2
+  (mod 26), which shares a factor with 26 and has no inverse, so the default Hill
+  setup threw "Invalid key". Changed the default to `HILL` (determinant 15,
+  invertible).
+
+Playfair's decrypted output can contain an inserted filler letter (a doubled letter,
+or an odd-length message, pads with `X`). That is how the classical Playfair cipher
+works — it is expected, not a bug.
+
+## Security note — please read
+
+This is an educational playground, **not** a tool for protecting real secrets:
+
+- The classical ciphers (Caesar, Affine, Hill, Playfair, Rail Fence) provide **no
+  real security** and are trivially broken.
+- DES and 2DES are **cryptographically broken** by modern standards and are included
+  only for comparison. (2DES in particular is vulnerable to a meet-in-the-middle
+  attack, giving it far less effective strength than its key length suggests.)
+- Even AES here uses CryptoJS's passphrase-based key derivation, which is fine for a
+  demo but is not how you would build a production encryption scheme.
+
+Use well-reviewed, modern libraries and protocols for anything real.
 
 ## Contributing
 
-Contributions are welcome! Feel free to fork the repository, open issues, or submit pull requests for new features, bug fixes, or improvements.
-
-## Testing & Verification
-
-Every cipher was actually exercised in a real browser (Playwright,
-served locally) rather than just read: input text was encrypted, the
-ciphertext fed back in, and decrypted, checking the round trip matches
-the original for all 9 ciphers (Caesar, Rail Fence, Playfair, Affine,
-Hill, DES, 2DES, 3DES, AES).
-
-That run surfaced two real bugs, both fixed:
-
-- **2DES was completely broken.** It chained two `CryptoJS.DES.encrypt()`
-  calls without converting the intermediate result to a string first,
-  passing a raw `CipherParams` object as if it were plaintext. This
-  threw `Invalid array length` the instant a user tried to encrypt
-  anything with 2DES selected (and would have failed identically on
-  decrypt). Fixed by calling `.toString()` between stages on both the
-  encrypt and decrypt paths.
-- **The Hill cipher's default keyword was mathematically invalid.**
-  "GYBN" produces a key matrix with determinant 2 (mod 26), which
-  shares a factor with 26 and therefore has no modular inverse — Hill
-  cipher requires an invertible key matrix for both encryption and
-  decryption. Selecting Hill and clicking Encrypt or Decrypt without
-  changing the default key threw "Invalid key" immediately. Changed
-  the default to "HILL" (determinant 15, invertible), verified with a
-  real round trip.
-
-Playfair's decrypted output can include an inserted filler letter
-(e.g. a double letter in the input becomes `..X..` after a round
-trip) — this is expected behavior of the classical Playfair cipher
-itself, not a bug.
-
-## Known Limitations
-
-- The classical ciphers (Caesar, Affine, Hill, Playfair, Rail Fence)
-  are for educational demonstration only and provide no real security.
-- DES and 2DES are cryptographically broken by modern standards and
-  are included for comparison/educational purposes, not as a
-  recommended way to protect real data.
-- No automated test suite — verification was exercising the real app
-  in a real browser, not a committed `tests/` directory.
+Contributions are welcome — fork the repository, open issues, or submit pull
+requests for new ciphers, bug fixes or improvements.
 
 ## License
 
-This project is open source and available under the [MIT License](LICENSE).
+Open source under the [MIT License](LICENSE).
